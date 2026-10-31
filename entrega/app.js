@@ -30,4 +30,34 @@ let {x,y}=v;assert(x<=y,'El límite inferior debe ser menor o igual al superior.
 if(i===6||i===10||i===11){assert(v.s>0,'La desviación estándar σ debe ser positiva.');if(i===6){mean=v.mu;variance=v.s**2;cdf=z=>norm((z-mean)/v.s);extra=`z(x) = ${fmt((x-mean)/v.s)}; z(y) = ${fmt((y-mean)/v.s)}`}if(i===10){mean=Math.exp(v.mu+v.s**2/2);variance=(Math.exp(v.s**2)-1)*Math.exp(2*v.mu+v.s**2);cdf=z=>z<=0?0:norm((Math.log(z)-v.mu)/v.s);extra='Estandarización: z = (ln(x) − μ)/σ para x > 0.'}if(i===11){assert(integer(n)&&n>0,'El tamaño de muestra debe ser un entero positivo.');let sum=v.kind==='suma';mean=v.mu*(sum?n:1);let se=v.s*(sum?Math.sqrt(n):1/Math.sqrt(n));variance=se**2;cdf=z=>norm((z-mean)/se);extra=`Error estándar de la media = ${fmt(v.s/Math.sqrt(n))}; desviación de ${v.kind} = ${fmt(se)}; z(x) = ${fmt((x-mean)/se)}; z(y) = ${fmt((y-mean)/se)}. Aproximación sujeta a los supuestos indicados.`}}
 if(i===7){assert(v.alpha>0&&v.theta>0,'α y θ deben ser positivos.');mean=v.alpha*v.theta;variance=v.alpha*v.theta**2;cdf=z=>gammaP(v.alpha,z/v.theta)}if(i===8){assert(v.lambda>0,'La tasa λ debe ser positiva.');mean=1/v.lambda;variance=mean**2;cdf=z=>z<=0?0:-Math.expm1(-v.lambda*z)}if(i===9){assert(v.nu>0,'Los grados de libertad deben ser positivos.');mean=v.nu;variance=2*v.nu;cdf=z=>gammaP(v.nu/2,z/2)}
 put('Media',mean);put('Varianza',variance);if(extra)lines.push(extra);put('P(X ≤ x)',cdf(x));put('P(X ≥ y)',1-cdf(y));put('P(x ≤ X ≤ y)',Math.max(0,cdf(y)-cdf(x)));lines.push('Interpretación: las probabilidades representan la proporción esperada a la izquierda de x, a la derecha de y y entre ambos límites.');return lines}
-$('form').onsubmit=e=>{e.preventDefault();try{let v={};$('fields').querySelectorAll('input:not([type=file]),textarea,select').forEach(el=>{v[el.id]=['datos','tipo','kind'].includes(el.id)?el.value:Number(el.value)});let out=compute(+sel.value,v);$('message').textContent='';let r=$('result');r.replaceChildren();let label=document.createElement('div');label.className='result-label';label.textContent='RESULTADO / INTERPRETACIÓN';r.append(label);out.forEach(t=>{let p=document.createElement('p');p.textContent=t;r.append(p)})}catch(err){$('message').textContent=err.message}};render();
+function addChart(result, i, v, lines) {
+  let items = [];
+  if (i === 0) {
+    const values = v.datos.trim().split(/[\s,;]+/).map(Number);
+    const counts = new Map();
+    values.forEach(value => counts.set(value, (counts.get(value) || 0) + 1));
+    if (counts.size > 30) return;
+    items = [...counts].sort((a,b) => a[0]-b[0]).map(([value,count]) => [String(value), count]);
+  } else {
+    items = lines.map(line => {
+      const match = line.match(/^(P\(X (?:= k|≤ k|≥ k|≤ x|≥ y)\)|P\(x ≤ X ≤ y\)):\s*([\d.eE+-]+)$/);
+      return match ? [match[1], Number(match[2])] : null;
+    }).filter(Boolean);
+  }
+  if (!items.length) return;
+  const block = document.createElement('div'); block.className = 'chart';
+  const heading = document.createElement('h3'); heading.textContent = i === 0 ? 'Frecuencia de los datos' : 'Probabilidades calculadas'; block.append(heading);
+  const explanation = document.createElement('p'); explanation.className = 'chart-help';
+  explanation.textContent = i === 0 ? 'Cada barra indica cuántas veces aparece el valor.' : 'Cada barra representa una probabilidad; los eventos pueden superponerse.'; block.append(explanation);
+  const max = i === 0 ? Math.max(...items.map(item => item[1])) : 1;
+  items.forEach(([label,value]) => {
+    const row = document.createElement('div'); row.className = 'chart-row';
+    const name = document.createElement('span'); name.className = 'chart-name'; name.textContent = label;
+    const track = document.createElement('div'); track.className = 'chart-track'; track.setAttribute('aria-hidden','true');
+    const bar = document.createElement('div'); bar.className = 'chart-bar'; bar.style.width = (Math.max(0,Math.min(1,value/max))*100)+'%'; track.append(bar);
+    const number = document.createElement('strong'); number.textContent = i === 0 ? fmt(value) : fmt(value*100)+' %';
+    row.append(name,track,number); block.append(row);
+  });
+  result.append(block);
+}
+$('form').onsubmit=e=>{e.preventDefault();try{let v={};$('fields').querySelectorAll('input:not([type=file]),textarea,select').forEach(el=>{v[el.id]=['datos','tipo','kind'].includes(el.id)?el.value:Number(el.value)});let out=compute(+sel.value,v);$('message').textContent='';let r=$('result');r.replaceChildren();let label=document.createElement('div');label.className='result-label';label.textContent='RESULTADO / INTERPRETACIÓN';r.append(label);out.forEach(t=>{let p=document.createElement('p');p.textContent=t;r.append(p)});addChart(r,+sel.value,v,out)}catch(err){$('message').textContent=err.message}};render();

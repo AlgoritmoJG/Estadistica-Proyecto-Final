@@ -33,3 +33,30 @@ Se evaluó la lógica de cálculo con Node.js. Los valores se redondean a siete 
 ## Método numérico
 
 La aplicación no usa bibliotecas estadísticas externas. Calcula combinaciones y probabilidades discretas con fórmulas; normal, gamma y ji cuadrada mediante aproximaciones numéricas de la función gamma incompleta. Los límites de cálculo indicados en pantalla y las aproximaciones pueden afectar valores extremos.
+
+## Verificación de los casos basados en las mediciones reales
+
+Se probaron los 12 botones CARGAR CASO y sus cálculos en Chromium mediante un servidor local, bloqueando solicitudes externas. Los resultados de abajo son esperados y obtenidos, con tolerancia absoluta de 0.000001. Se contrastaron con fórmulas y las funciones de distribución de SciPy 1.17.0; SciPy se usó únicamente para comprobar, no es una dependencia de la aplicación. Los valores originales, fecha y método de medición se detallan en CASO_REAL.pdf. Los casos de distribución son aproximaciones con supuestos, no mediciones adicionales.
+
+| Módulo | Resultado comparado | Esperado | Obtenido |
+|---|---|---:|---:|
+| Descriptiva | media (ms) | 0.0060191 | 0.0060191 |
+| Conteo y probabilidad | unión | 0.9 | 0.9 |
+| Binomial | P(X=10) | 0.7124714 | 0.7124714 |
+| Hipergeométrica | P(X=9) | 0.3333333 | 0.3333333 |
+| Poisson | P(X=0) | 0.7165313 | 0.7165313 |
+| Uniforme | intervalo | 0.1942299 | 0.1942299 |
+| Normal | intervalo | 0.4403470 | 0.4403470 |
+| Gamma | intervalo | 0.3902385 | 0.3902385 |
+| Exponencial | intervalo | 0.3246272 | 0.3246272 |
+| Ji cuadrada | intervalo | 0.8089902 | 0.8089902 |
+| Lognormal | intervalo | 0.7391189 | 0.7391189 |
+| Teorema del límite central | intervalo de media | 0.7221185 | 0.7221185 |
+
+Las pruebas anteriores con datos didácticos permanecen como controles independientes; no describen mediciones reales. Al editar los datos de un caso, su explicación se oculta para evitar atribuir los valores nuevos a las mediciones originales.
+
+## Comprobaciones adicionales de la interfaz
+
+- Con P(A)=0, P(B)=0.5 y P(A∩B)=0, la aplicación informa que P(B|A) no está definida y calcula directamente P(A|B)=0.
+- Tras modificar una entrada, el contexto del caso y el resultado anterior desaparecen; el resultado se actualiza al volver a pulsar CALCULAR.
+- El botón de mediciones reales carga el mismo conjunto y contexto que CARGAR CASO en Descriptiva.
